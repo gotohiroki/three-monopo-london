@@ -128,6 +128,10 @@ export default class webGL {
       uColor1: new Color(0.89, 0.34, 0.11),
       uColor2: new Color(0.56, 0.64, 0.64),
       uColor3: new Color(0.16, 0.26, 0.47),
+      uUvScale: 1.5,
+      uMouseLine: 0.3,
+      uLengthLine: 0.5,
+      uNoiseAmount: 0.9
     }
     this.gui = new GUI();
 
@@ -140,6 +144,18 @@ export default class webGL {
     });
     bgFolder.addColor(this.settings, 'uColor3').name('Third Color').onChange(() => {
       this.material.uniforms.uColor3.value = this.settings.uColor3;
+    });
+    bgFolder.add(this.settings, 'uUvScale', 0.01, 3, 0.01).name('uv scale').onChange(() => {
+      this.material.uniforms.uUvScale.value = this.settings.uUvScale;
+    });
+    bgFolder.add(this.settings, 'uMouseLine', 0.01, 1, 0.01).name('mouse line').onChange(() => {
+      this.material.uniforms.uMouseLine.value = this.settings.uMouseLine;
+    });
+    bgFolder.add(this.settings, 'uLengthLine', 0.01, 1, 0.01).name('length line').onChange(() => {
+      this.material.uniforms.uLengthLine.value = this.settings.uLengthLine;
+    });
+    bgFolder.add(this.settings, 'uNoiseAmount', 0.01, 1.2, 0.01).name('Noise amount').onChange(() => {
+      this.material.uniforms.uNoiseAmount.value = this.settings.uNoiseAmount;
     });
   }
 
@@ -161,12 +177,17 @@ export default class webGL {
     this.material = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uResolution: { value: new Vector4() },
         uMouse: { value: new Vector2() },
         uBlack: { value: new Color(0.0, 0.0, 0.0) },
         uColor1: { value: new Color(0.89, 0.34, 0.11) },
         uColor2: { value: new Color(0.56, 0.64, 0.64) },
         uColor3: { value: new Color(0.16, 0.26, 0.47) },
+        uUvScale: { value: 1.5 },
+        uMouseLine: { value: 0.3 },
+        uLengthLine: { value: 0.5 },
+        uNoiseAmount: { value: 0.9 },
+        uZoom: { value: 0.5 },
+        uTransformPosition: { value: 0.8 },
       },
       vertexShader,
       fragmentShader,
@@ -179,7 +200,7 @@ export default class webGL {
   }
 
   _createMesh1() {
-    this.geometry1 = new CircleGeometry(0.23, 50);
+    this.geometry1 = new CircleGeometry(0.25, 50);
     this.material1 = new MeshBasicMaterial({
       map: this.texture,
       transparent: true

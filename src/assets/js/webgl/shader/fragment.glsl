@@ -1,9 +1,12 @@
-uniform float uTime;
 uniform vec2 uMouse;
 uniform vec3 uBlack;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
 uniform vec3 uColor3;
+uniform float uUvScale;
+uniform float uMouseLine;
+uniform float uLengthLine;
+uniform float uNoiseAmount;
 
 varying vec2 vUv;
 
@@ -20,21 +23,21 @@ float random(vec2 p) {
 }
 
 void main() {
-  vec2 seed = vUv * 1.5 * ( uMouse + 0.3 * (length(uMouse) + 0.5));
-  float n = cnoise2(seed) + length(uMouse) * 0.9;
+  vec2 seed = vUv * uUvScale * ( uMouse + uMouseLine * (length(uMouse) + uLengthLine));
+  float noise = cnoise2(seed) + length(uMouse) * uNoiseAmount;
 
   float ml = pow(length(uMouse), 2.5) * 0.15;
 
-  float n1 = smoothstep( 0.0, 0.0 + 0.2, n );
+  float n1 = smoothstep( 0.0, 0.0 + 0.2, noise );
   vec3 color = mix( uBlack, uColor1, n1 );
 
-  float n2 = smoothstep(0.1 + ml, 0.1 + ml + 0.2, n);
+  float n2 = smoothstep(0.1 + ml, 0.1 + ml + 0.2, noise);
   color = mix(color, uColor2, n2);
 
-  float n3 = smoothstep(0.2 + ml, 0.2 + ml + 0.2, n);
+  float n3 = smoothstep(0.2 + ml, 0.2 + ml + 0.2, noise);
   color = mix(color, uColor3, n3);
 
-  float n4 = smoothstep(0.3 + ml, 0.3 + ml + 0.2, n);
+  float n4 = smoothstep(0.3 + ml, 0.3 + ml + 0.2, noise);
   color = mix(color, uBlack, n4);
 
   vec2 uvrandom = vUv;
