@@ -32,7 +32,7 @@ export default class Drawer {
     ctx.fillStyle = '#fff';
 
     const text2Metrics = ctx.measureText(this._text2);
-    
+
     ctx.fillText(this._text1, this._margin, this._margin);
     ctx.fillText(this._text2, width - text2Metrics.width - this._margin, height - (fontSize + this._margin));
   }

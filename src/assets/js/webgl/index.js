@@ -1,7 +1,6 @@
 import {
   Color,
   Mesh,
-  PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
@@ -11,8 +10,6 @@ import {
   DoubleSide,
   MeshBasicMaterial,
   Clock,
-  Vector4,
-  SphereGeometry,
   Vector2,
   OrthographicCamera,
   CircleGeometry,
@@ -87,26 +84,14 @@ export default class webGL {
     this._setTexture();
     this._createMesh();
     this._createMesh1();
-    const a = this._textPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader);
+    this._textPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader);
     this._textPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader);
 
     window.addEventListener('mousemove', (e) => {
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      // console.log('マウスの座標' ,this.mouse.x, this.mouse.y)
     });
-
-    // a.handlePointerMove({ uv: new Vector2(0.5, 0.5) })
-
-    // a.addEventListener("pointermove", (e) => {
-    //   this.handlePointerMove(e);
-    // });
-    // window.addEventListener("pointerenter", (e) => {
-    //   this.handlePointerEnter(e);
-    //   console.log(this.handlePointerEnter(e))
-    // });
-    // window.addEventListener("pointerleave", (e) => {
-    //   this.handlePointerLeave();
-    // });
   }
 
   _setScene() {
@@ -249,6 +234,18 @@ export default class webGL {
     this.textPlaneMesh = new Mesh(this.textPlaneGeometry, this.textPlaneMaterial);
     this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
     this.scene.add(this.textPlaneMesh);
+
+    this.container.addEventListener("pointermove", (e) => {
+      this.handlePointerMove(e)
+    });
+
+    this.container.addEventListener("pointerenter", (e) => {
+      this.handlePointerEnter(e);
+    });
+
+    this.container.addEventListener("pointerleave", (e) => {
+      this.handlePointerLeave();
+    });
   }
 
   _render() {
@@ -282,11 +279,28 @@ export default class webGL {
   }
 
   handlePointerMove(e) {
-    this.textPlaneTarget.copy(e.uv);
+    const rect = e.target.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    this.textPlaneTarget.set(x * 2 - 1, -y * 2 + 1);
+    // console.log('テキストの座標' ,x, y)
+
+    // console.log(window.innerWidth, this.container.innerWidth)
+    // console.log(window.clientX, x)
+    
+    // this.textPlaneTarget.copy(e.uv);
   }
 
   handlePointerEnter(e) {
-    this.textPlaneMaterial.uniforms.uMouse.value.copy(e.uv);
+    const rect = e.target.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    
+    const normalizedX = x * 2 - 1;
+    const normalizedY = -y * 2 + 1;
+    
+    this.textPlaneMaterial.uniforms.uMouse.value.set(normalizedX, normalizedY);
+    // this.textPlaneMaterial.uniforms.uMouse.value.copy(e.uv);
     this.textPlaneMaterial.uniforms.uEnable.value = true;
   };
 
@@ -294,8 +308,6 @@ export default class webGL {
     this.textPlaneMaterial.uniforms.uEnable.value = false;
   };
 
-
-  // 毎フレーム呼び出す
   update() {
     const mouse1 = new Vector3(this.mouse.x, this.mouse.y, 0.01);
     this.updateLenseMouse(mouse1);
@@ -303,9 +315,10 @@ export default class webGL {
     const mouse2 = new Vector2(this.mouse.x, this.mouse.y);
     this.updateBgMouse(mouse2);
 
-    const mouse3 = new Vector2(this.mouse.x, this.mouse.y);
-    this.updateTextMouse(mouse3);
-    // console.log(this.updateTextMouse(mouse3))
+    // const mouse3 = new Vector2(this.mouse.x, this.mouse.y);
+    // this.updateTextMouse(mouse3);
+
+    this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
 
     this.stats.update();
 
