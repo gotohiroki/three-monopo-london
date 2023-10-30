@@ -23,11 +23,14 @@ import { lerp } from "three/src/math/MathUtils.js";
 import vertexShader from "./shader/vertex.glsl";
 import fragmentShader from "./shader/fragment.glsl";
 import GUI from "lil-gui";
+import Drawer from "./Drawer";
+import enVertexShader from './shader/enVertexShader.glsl';
+import enFragmentShader from './shader/enFragmentShader.glsl';
+import jpVertexShader from './shader/jpVertexShader.glsl';
+import jpFragmentShader from './shader/jpFragmentShader.glsl';
 
 export default class webGL {
-  // コンストラクタ
   constructor(containerSelector) {
-    // canvasタグが配置されるコンテナを取得
     this.container = document.querySelector(containerSelector);
 
     this.renderParam = {
@@ -70,6 +73,8 @@ export default class webGL {
     this.uniforms = null;
     this.clock = new Clock();
     this.image = "./assets/img/lense.png";
+    
+    this.textPlaneTarget = new Vector2();
   }
 
   init() {
@@ -82,11 +87,26 @@ export default class webGL {
     this._setTexture();
     this._createMesh();
     this._createMesh1();
+    const a = this._textPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader);
+    this._textPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader);
 
     window.addEventListener('mousemove', (e) => {
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
+
+    // a.handlePointerMove({ uv: new Vector2(0.5, 0.5) })
+
+    // a.addEventListener("pointermove", (e) => {
+    //   this.handlePointerMove(e);
+    // });
+    // window.addEventListener("pointerenter", (e) => {
+    //   this.handlePointerEnter(e);
+    //   console.log(this.handlePointerEnter(e))
+    // });
+    // window.addEventListener("pointerleave", (e) => {
+    //   this.handlePointerLeave();
+    // });
   }
 
   _setScene() {
@@ -211,6 +231,26 @@ export default class webGL {
     this.scene.add(this.mesh1);
   }
 
+  _textPlane(text, vertex, fragment) {
+    this.drawer = new Drawer(text[0], text[1]);
+    this.drawer.draw();
+    this.textPlaneGeometry = new PlaneGeometry(2.6, 2.6 / this.drawer.aspect);
+    this.textPlaneMaterial = new ShaderMaterial({
+      uniforms: {
+        uTexture: { value: this.drawer.texture },
+        uMouse: { value: new Vector2() },
+        uAspect: { value: this.drawer.aspect },
+        uEnable: { value: false },
+      },
+      vertexShader: vertex,
+      fragmentShader: fragment,
+      transparent: true
+    });
+    this.textPlaneMesh = new Mesh(this.textPlaneGeometry, this.textPlaneMaterial);
+    this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
+    this.scene.add(this.textPlaneMesh);
+  }
+
   _render() {
     this.renderer.render(this.scene, this.camera);
   }
@@ -235,6 +275,25 @@ export default class webGL {
     this.material.uniforms.uMouse.value.lerp(targetV2, 0.2);
   }
 
+  updateTextMouse(mouse) {
+    this.mouse = mouse;
+    this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
+    this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
+  }
+
+  handlePointerMove(e) {
+    this.textPlaneTarget.copy(e.uv);
+  }
+
+  handlePointerEnter(e) {
+    this.textPlaneMaterial.uniforms.uMouse.value.copy(e.uv);
+    this.textPlaneMaterial.uniforms.uEnable.value = true;
+  };
+
+  handlePointerLeave() {
+    this.textPlaneMaterial.uniforms.uEnable.value = false;
+  };
+
 
   // 毎フレーム呼び出す
   update() {
@@ -243,6 +302,10 @@ export default class webGL {
 
     const mouse2 = new Vector2(this.mouse.x, this.mouse.y);
     this.updateBgMouse(mouse2);
+
+    const mouse3 = new Vector2(this.mouse.x, this.mouse.y);
+    this.updateTextMouse(mouse3);
+    // console.log(this.updateTextMouse(mouse3))
 
     this.stats.update();
 
@@ -257,6 +320,7 @@ export default class webGL {
     this.camera.aspect = windowWidth / windowHeight;
 
     this.mesh1.scale.set( 1 / this.camera.aspect, 1, 1 );
+    this.textPlaneMesh.scale.set( 1 / this.camera.aspect, 1, 1 );
 
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(window.devicePixelRatio);
