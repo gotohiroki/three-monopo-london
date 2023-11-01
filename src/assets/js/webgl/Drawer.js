@@ -15,6 +15,7 @@ export default class Drawer {
     this._ctx = canvas.getContext('2d');
     this.aspect = canvas.width / canvas.height;
     this.texture = new CanvasTexture(canvas);
+    this.texture.needsUpdate = true;
   }
 
   draw() {

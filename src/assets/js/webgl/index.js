@@ -13,13 +13,14 @@ import {
   Vector2,
   OrthographicCamera,
   CircleGeometry,
+  Raycaster,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { lerp } from "three/src/math/MathUtils.js";
+import { lerp } from "three/src/math/MathUtils";
 import GUI from "lil-gui";
-import vertexShader from "./shader/vertex.glsl";
-import fragmentShader from "./shader/fragment.glsl";
+import bgVertexShader from "./shader/vertex.glsl";
+import bgFragmentShader from "./shader/fragment.glsl";
 import enVertexShader from './shader/enVertexShader.glsl';
 import enFragmentShader from './shader/enFragmentShader.glsl';
 import jpVertexShader from './shader/jpVertexShader.glsl';
@@ -73,6 +74,7 @@ export default class webGL {
     this.mesh = null;
     this.uniforms = null;
     this.clock = new Clock();
+    this.raycaster = new Raycaster();
     this.image = "./assets/img/lense.png";
     
     this.lensTarget = new Vector3();
@@ -91,29 +93,36 @@ export default class webGL {
     this._Background();
     this._Lense();
     this._TextPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader);
-    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader);
+    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader, 0.01);
 
     this.onEvent();
   }
 
+  onMouseMove(e) {
+    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  }
+
   onEvent() {
     window.addEventListener('pointermove', (e) => {
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      this.onMouseMove(e)
     });
-
+    
     this.container.addEventListener("pointermove", (e) => {
       this.handlePointerMove(e)
+      // console.log(this.textPlaneMaterial.uniforms.uEnable)
       // console.log('マウスが動きました')
     });
-
+    
     this.container.addEventListener("pointerenter", (e) => {
       this.handlePointerEnter(e);
+      // console.log(this.textPlaneMaterial.uniforms.uEnable)
       // console.log('マウスが乗りました')
     });
 
     this.container.addEventListener("pointerleave", (e) => {
       this.handlePointerLeave();
+      // console.log(this.textPlaneMaterial.uniforms.uEnable)
       // console.log('マウスが離れました')
     });
   }
@@ -218,8 +227,8 @@ export default class webGL {
         uZoom: { value: 0.5 },
         uTransformPosition: { value: 0.8 },
       },
-      vertexShader,
-      fragmentShader,
+      vertexShader: bgVertexShader,
+      fragmentShader: bgFragmentShader,
       // wireframe: true,
       side: DoubleSide,
     });
@@ -235,12 +244,12 @@ export default class webGL {
       transparent: true
     })
     this.lenseMesh = new Mesh(this.lenseGeometry, this.lenseMaterial);
-    this.lenseMesh.position.z = 0.01;
+    // this.lenseMesh.position.z = 0.01;
     this.lenseMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
     this.scene.add(this.lenseMesh);
   }
   
-  _TextPlane(text, vertex, fragment) {
+  _TextPlane(text, vertex, fragment, pos) {
     this.drawer = new Drawer(text[0], text[1]);
     this.drawer.draw();
     this.textPlaneGeometry = new PlaneGeometry( 2.6, 2.6 / this.drawer.aspect );
@@ -257,6 +266,8 @@ export default class webGL {
     });
     this.textPlaneMesh = new Mesh(this.textPlaneGeometry, this.textPlaneMaterial);
     this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
+    this.textPlaneMesh.position.z = pos;
+
     this.scene.add(this.textPlaneMesh);
   }
 
@@ -276,6 +287,7 @@ export default class webGL {
   updateTextMouse(mouse) {
     this.mouse = mouse;
     this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
+    // this.textPlaneTarget.set((this.mouse.x + 1) * 0.5,  (this.mouse.y + 1) * 0.5);
     this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
   }
 
@@ -298,8 +310,8 @@ export default class webGL {
 
   update() {
     const mouseV3 = new Vector3(this.mouse.x, this.mouse.y, 0.01);
-    const mouseV2 = new Vector2(this.mouse.x, this.mouse.y);
     this.updateLenseMouse(mouseV3);
+    const mouseV2 = new Vector2(this.mouse.x, this.mouse.y);
     this.updateBgMouse(mouseV2);
     this.updateTextMouse(mouseV2);
 
