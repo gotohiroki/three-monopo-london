@@ -58,11 +58,12 @@ export default class webGL {
       y: 0,
     };
     
-    this.normalized = {
-      rect: null,
-      x: 0,
-      y: 0,
-    };
+    this.pos = {
+      bg: 0,
+      en: 0.001,
+      jp: 0.002,
+      lense: 0.003
+    }
 
     this.scene = null;
     this.camera = null;
@@ -73,8 +74,6 @@ export default class webGL {
     this.material = null;
     this.mesh = null;
     this.uniforms = null;
-    this.clock = new Clock();
-    this.raycaster = new Raycaster();
     this.image = "./assets/img/lense.png";
     
     this.lensTarget = new Vector3();
@@ -92,8 +91,8 @@ export default class webGL {
     this._setTexture();
     this._Background();
     this._Lense();
-    this._TextPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader);
-    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader, 0.01);
+    this._TextPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader,  this.pos.en);
+    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader,  this.pos.jp);
 
     this.onEvent();
   }
@@ -234,6 +233,7 @@ export default class webGL {
     });
 
     this.mesh = new Mesh(this.geometry, this.material);
+    this.mesh.position.z = this.pos.bg;
     this.scene.add(this.mesh);
   }
 
@@ -244,7 +244,7 @@ export default class webGL {
       transparent: true
     })
     this.lenseMesh = new Mesh(this.lenseGeometry, this.lenseMaterial);
-    // this.lenseMesh.position.z = 0.01;
+    this.lenseMesh.position.z = this.pos.lense;
     this.lenseMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
     this.scene.add(this.lenseMesh);
   }
@@ -271,21 +271,18 @@ export default class webGL {
     this.scene.add(this.textPlaneMesh);
   }
 
-  updateBgMouse(mouse) {
-    this.mouse = mouse;
+  updateBgMouse() {
     this.bgTarget.set((this.mouse.x + 1) * 0.5,  (this.mouse.y + 1) * 0.5);
     this.material.uniforms.uMouse.value.lerp(this.bgTarget, 0.2);
     this.material.uniforms.uTime.value += 0.005;
   }
 
-  updateLenseMouse(mouse) {
-    this.mouse = mouse;
+  updateLenseMouse() {
     this.lensTarget.set(this.mouse.x, this.mouse.y, 0.01);
     this.lenseMesh.position.lerp( this.lensTarget, 0.1);
   }
 
-  updateTextMouse(mouse) {
-    this.mouse = mouse;
+  updateTextMouse() {
     this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
     // this.textPlaneTarget.set((this.mouse.x + 1) * 0.5,  (this.mouse.y + 1) * 0.5);
     this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
@@ -309,11 +306,9 @@ export default class webGL {
   }
 
   update() {
-    const mouseV3 = new Vector3(this.mouse.x, this.mouse.y, 0.01);
-    this.updateLenseMouse(mouseV3);
-    const mouseV2 = new Vector2(this.mouse.x, this.mouse.y);
-    this.updateBgMouse(mouseV2);
-    this.updateTextMouse(mouseV2);
+    this.updateLenseMouse();
+    this.updateBgMouse();
+    this.updateTextMouse();
 
     this.stats.update();
     requestAnimationFrame(this.update.bind(this));
