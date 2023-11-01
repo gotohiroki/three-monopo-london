@@ -55,8 +55,6 @@ export default class webGL {
     this.mouse = {
       x: 0,
       y: 0,
-      lastX: 0,
-      lastY: 0,
     };
     
     this.normalized = {
@@ -99,26 +97,25 @@ export default class webGL {
   }
 
   onEvent() {
-    window.addEventListener('mousemove', (e) => {
+    window.addEventListener('pointermove', (e) => {
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-    // this.container.addEventListener("pointermove", (e) => {
-    //   this.handlePointerMove(e)
-    //   console.log('マウスが動きました')
-    // });
+    this.container.addEventListener("pointermove", (e) => {
+      this.handlePointerMove(e)
+      // console.log('マウスが動きました')
+    });
 
-    // this.container.addEventListener("pointerenter", (e) => {
-    //   this.handlePointerEnter(e);
-    //   console.log('マウスが乗りました')
-    // });
+    this.container.addEventListener("pointerenter", (e) => {
+      this.handlePointerEnter(e);
+      // console.log('マウスが乗りました')
+    });
 
-    // this.container.addEventListener("pointerleave", (e) => {
-    //   this.handlePointerLeave();
-    //   console.log('マウスが離れました')
-    // });
-
+    this.container.addEventListener("pointerleave", (e) => {
+      this.handlePointerLeave();
+      // console.log('マウスが離れました')
+    });
   }
 
   _setScene() {
@@ -133,7 +130,6 @@ export default class webGL {
     this.renderer.setClearColor(new Color(this.renderParam.clearColor));
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(this.renderParam.width, this.renderParam.height);
-
     this.container.appendChild(this.renderer.domElement);
   }
 
@@ -189,6 +185,7 @@ export default class webGL {
     bgFolder.add(this.settings, 'uNoiseAmount', 0.01, 1.2, 0.01).name('Noise amount').onChange(() => {
       this.material.uniforms.uNoiseAmount.value = this.settings.uNoiseAmount;
     });
+    bgFolder.close();
   }
 
   _setStats() {
@@ -232,7 +229,7 @@ export default class webGL {
   }
 
   _Lense() {
-    this.lenseGeometry = new CircleGeometry(0.23, 50);
+    this.lenseGeometry = new CircleGeometry( 0.23, 50 );
     this.lenseMaterial = new MeshBasicMaterial({
       map: this.texture,
       transparent: true
@@ -260,23 +257,7 @@ export default class webGL {
     });
     this.textPlaneMesh = new Mesh(this.textPlaneGeometry, this.textPlaneMaterial);
     this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
-    
-    this.container.addEventListener("pointermove", (e) => {
-        this.handlePointerMove(e)
-        console.log('マウスが動きました')
-      });
-  
-      this.container.addEventListener("pointerenter", (e) => {
-        this.handlePointerEnter(e);
-        console.log('マウスが乗りました')
-      });
-  
-      this.container.addEventListener("pointerleave", (e) => {
-        this.handlePointerLeave();
-        console.log('マウスが離れました')
-      });
     this.scene.add(this.textPlaneMesh);
-
   }
 
   updateBgMouse(mouse) {
