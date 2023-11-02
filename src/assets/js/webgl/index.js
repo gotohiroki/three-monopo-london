@@ -9,7 +9,6 @@ import {
   WebGLRenderer,
   DoubleSide,
   MeshBasicMaterial,
-  Clock,
   Vector2,
   OrthographicCamera,
   CircleGeometry,
@@ -53,10 +52,7 @@ export default class webGL {
       z: 0,
     };
 
-    this.mouse = {
-      x: 0,
-      y: 0,
-    };
+    this.mouse = new Vector2();
     
     this.pos = {
       bg: 0,
@@ -74,11 +70,14 @@ export default class webGL {
     this.material = null;
     this.mesh = null;
     this.uniforms = null;
+    this.raycaster = new Raycaster();
     this.image = "./assets/img/lense.png";
     
     this.lensTarget = new Vector3();
     this.bgTarget = new Vector2();
     this.textPlaneTarget = new Vector2();
+
+    this.intersects = [];
   }
 
   init() {
@@ -91,8 +90,8 @@ export default class webGL {
     this._setTexture();
     this._Background();
     this._Lense();
-    this._TextPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader,  this.pos.en);
-    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader,  this.pos.jp);
+    this._TextPlane(['What shall', 'I create today?'], enVertexShader, enFragmentShader, this.pos.en);
+    this._TextPlane(['今日は', '何を作ろうか?'], jpVertexShader, jpFragmentShader, this.pos.jp);
 
     this.onEvent();
   }
@@ -103,26 +102,17 @@ export default class webGL {
   }
 
   onEvent() {
-    window.addEventListener('pointermove', (e) => {
-      this.onMouseMove(e)
-    });
-    
     this.container.addEventListener("pointermove", (e) => {
+      this.onMouseMove(e)
       this.handlePointerMove(e)
-      // console.log(this.textPlaneMaterial.uniforms.uEnable)
-      // console.log('マウスが動きました')
     });
     
     this.container.addEventListener("pointerenter", (e) => {
       this.handlePointerEnter(e);
-      // console.log(this.textPlaneMaterial.uniforms.uEnable)
-      // console.log('マウスが乗りました')
     });
 
     this.container.addEventListener("pointerleave", (e) => {
       this.handlePointerLeave();
-      // console.log(this.textPlaneMaterial.uniforms.uEnable)
-      // console.log('マウスが離れました')
     });
   }
 
@@ -267,8 +257,12 @@ export default class webGL {
     this.textPlaneMesh = new Mesh(this.textPlaneGeometry, this.textPlaneMaterial);
     this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
     this.textPlaneMesh.position.z = pos;
-
     this.scene.add(this.textPlaneMesh);
+
+    // Raycasterを更新
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    this.intersects = this.raycaster.intersectObjects([this.textPlaneMesh]);
+    console.log(this.intersects)
   }
 
   updateBgMouse() {
@@ -284,16 +278,26 @@ export default class webGL {
 
   updateTextMouse() {
     this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
-    // this.textPlaneTarget.set((this.mouse.x + 1) * 0.5,  (this.mouse.y + 1) * 0.5);
     this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
   }
 
   handlePointerMove(e) {
-    this.textPlaneTarget.copy(new Vector2(e.uv));
+    if(this.intersects.length) {
+      const uv = this.intersects[1].uv;
+      console.log(this.textPlaneTarget)
+      this.textPlaneTarget.copy(uv);
+      console.log(this.textPlaneTarget)
+      return this.textPlaneTarget;
+    }
   }
 
   handlePointerEnter(e) {
-    this.textPlaneMaterial.uniforms.uMouse.value.copy(new Vector2(e.uv));
+    if(this.intersects.length) {
+      const uv = this.intersects[1].uv;
+      console.log(this.textPlaneMaterial.uniforms.uMouse.value)
+      this.textPlaneMaterial.uniforms.uMouse.value.copy(uv);
+      console.log(this.textPlaneMaterial.uniforms.uMouse.value)
+    }
     this.textPlaneMaterial.uniforms.uEnable.value = true;
   };
 
@@ -309,7 +313,7 @@ export default class webGL {
     this.updateLenseMouse();
     this.updateBgMouse();
     this.updateTextMouse();
-
+    
     this.stats.update();
     requestAnimationFrame(this.update.bind(this));
     this._render();
