@@ -104,15 +104,17 @@ export default class webGL {
   onEvent() {
     this.container.addEventListener("pointermove", (e) => {
       this.onMouseMove(e)
-      this.handlePointerMove(e)
+      console.log(this.textPlaneMaterial.uniforms.uEnable.value)
+      
+      // this.handlePointerMove(e)
     });
     
     this.container.addEventListener("pointerenter", (e) => {
-      this.handlePointerEnter(e);
+      // this.handlePointerEnter(e);
     });
 
     this.container.addEventListener("pointerleave", (e) => {
-      this.handlePointerLeave();
+      // this.handlePointerLeave();
     });
   }
 
@@ -258,11 +260,6 @@ export default class webGL {
     this.textPlaneMesh.scale.set( 1 / this.cameraParam.aspect, 1, 1 );
     this.textPlaneMesh.position.z = pos;
     this.scene.add(this.textPlaneMesh);
-
-    // Raycasterを更新
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    this.intersects = this.raycaster.intersectObjects([this.textPlaneMesh]);
-    console.log(this.intersects)
   }
 
   updateBgMouse() {
@@ -277,7 +274,7 @@ export default class webGL {
   }
 
   updateTextMouse() {
-    this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
+    // this.textPlaneTarget.set(this.mouse.x, this.mouse.y);
     this.textPlaneMaterial.uniforms.uMouse.value.lerp(this.textPlaneTarget, 0.1);
   }
 
@@ -287,7 +284,6 @@ export default class webGL {
       console.log(this.textPlaneTarget)
       this.textPlaneTarget.copy(uv);
       console.log(this.textPlaneTarget)
-      return this.textPlaneTarget;
     }
   }
 
@@ -313,6 +309,22 @@ export default class webGL {
     this.updateLenseMouse();
     this.updateBgMouse();
     this.updateTextMouse();
+
+    // Raycasterを更新
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    this.intersects = this.raycaster.intersectObjects([this.textPlaneMesh], false);
+    
+    if(this.intersects.length > 0) {
+      const uv = this.intersects[0].uv;
+
+      this.textPlaneTarget.copy(uv);
+      this.textPlaneMaterial.uniforms.uMouse.value.copy(uv);
+      this.textPlaneMaterial.uniforms.uEnable.value = true;
+
+    } else {
+      this.textPlaneMaterial.uniforms.uEnable.value = false;
+    }
+
     
     this.stats.update();
     requestAnimationFrame(this.update.bind(this));
@@ -323,6 +335,11 @@ export default class webGL {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     this.camera.aspect = windowWidth / windowHeight;
+
+    this.camera.left = this.cameraParam.left;
+    this.camera.right = this.cameraParam.right;
+    this.camera.top = this.cameraParam.top;
+    this.camera.bottom = this.cameraParam.bottom;
 
     this.lenseMesh.scale.set( 1 / this.camera.aspect, 1, 1 );
     this.textPlaneMesh.scale.set( 1 / this.camera.aspect, 1, 1 );
